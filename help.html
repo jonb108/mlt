@@ -154,27 +154,27 @@ Click on <span class=blue>Import</span> and you will see:
 <ul>
 <img src=import.png width=800>
 </ul>
-You are asked for a file of messages and
+You are asked for a file of messages, two column letters, and
 an <i>optional</i> Brigade Name, City, and State that
 will apply to all imported messages.
 <p>
-Choose a file
-on your computer containing messages and
-click the Import button.  Lines can be in two different formats:
-<ul class=green style='font-size: 20pt;'>
-TARIFFS ARE TAXES PAID BY US!<br>
-5/6/25,POTUS IS PUTIN'S PUPPET<br>
-HEALTHCARE NOT WARFARE<br>
-11/27,"HAPPPY THANKSGIVING"
-</ul>
-If a line has a comma and there is a date before the first comma
-the message will be imported with that date.
-Lines without dates will be assigned today's date.
-<p>
 The import file will usually be a .csv file (exported from a spreadsheet
-- <span class=red>c</span>omma <span class=red>s</span>eparated <span class=red>v</span>alues)
-but it could also be just a plain .txt file.
+- <span class=red>c</span>omma <span class=red>s</span>eparated <span class=red>v</span>alues).
 <p>
+The spreadsheet will have column letters for the Date and the Message.
+<p>
+Here is an example of a .csv file where the column letters are A and B (the default):
+<ul class=green style='font-size: 20pt;'>
+Date,Message<br>
+05/06/25,POTUS IS PUTIN'S PUPPET<br>
+11/27/25,HAPPY THANKSGIVING
+</ul>
+And another where the column letters are B and D:
+<ul class=green style='font-size: 20pt;'>
+Number,Date,Direction,Message<br>
+1,05/06/25,Eastbound,POTUS IS PUTIN'S PUPPET<br>
+2,11/27/25,Westbound,HAPPY THANKSGIVING
+</ul>
 <p>
 After the messages are imported you are asked to choose topics
 for each of them in sequence.  If you imported many messages and
@@ -192,6 +192,18 @@ However, if one has added a message or done a large import of messages
 messages.   Enter the term 'NT' (no topics) in the search text field
 and hit Enter.  This will search for all messages without topics
 and ask you to set the applicable topics for each of them in sequence.
+<h2>Duplicate Messages</h2>
+This message library keeps just <i>one</i> instance of a message no matter how
+many different brigades have used it.  If you add or import a message
+that is <i>already</i> in the library the date on the message will be
+set to the more recent date but the brigade name, city, and
+state will not be changed.
+<p>
+Because of this unduplication when you search for messages from
+your particular brigade the list may not match the exact history of
+your messages.  It is recommended that you keep this history in another
+place - such as your own spreadsheet or in the VB Letter Tool described
+below in the <a href=#see_also>See Also</a> section.
 <h2>Date Formats</h2>
 When entering dates for messages you can use several formats:
 <ul>
@@ -242,8 +254,10 @@ invoke various functions;
 <td>Show Topics ordered alphabetically.</td>
 </tr>
 </table>
+<a name=see_also></a>
 <h2>See Also</h2>
-Another web application to help manage a brigade's letters:
+Here is a little VB Letter Tool application to help
+manage a brigade's letters:
 <ul>
 <a target=_blank href='https://VBmessages.org/lt'>VBmessages.org/lt</a>
 </ul>

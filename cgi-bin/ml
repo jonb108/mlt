@@ -3,14 +3,12 @@ use strict;
 use warnings;
 
 use lib '.';
+use Text::CSV_PP;
 
 =comment
 
 TODO:
     search for IT'S, get error
-    msgs with one or more periods at the end
-        check for a duplicate without the period(s)
-        give a good error message about the duplicate
 
     timestamp the log
     log is for today.  how to see other days?
@@ -180,21 +178,31 @@ sub import1 {
 <form method=post enctype="multipart/form-data"> 
 <table cellpadding=5>
 <tr>
-<td align=right>CSV File:</td>
+<td align=right>CSV File</td>
 <td><input type=file name=import_file></td>
 </tr>
 <tr>
+<tr>
+<td align=right>Date Column</td>
+<td><input type=text name=date_col size=1 value='A'
+style='text-transform: uppercase; width: 18mm;'>
+Message Column
+<input type=text name=msg_col size=1 value='B'
+style='text-transform: uppercase; width: 18mm;'>
+</td>
+</tr>
+<tr>
 <td align=right>Brigade Name</td>
-<td><input type=text name=brigade_name size=37 value='$bn'><span class=opt_help>(optional)</span>
+<td><input type=text name=brigade_name size=37 value="$bn"><span class=opt_help>(optional)</span>
 </td>
 </tr>
 <tr>
 <td align=right>City</td>
-<td><input type=text name=city size=26 value='$ct'>
+<td><input type=text name=city size=26 value="$ct">
 &nbsp;&nbsp;
 State <input 
 style='text-transform: uppercase; width: 18mm;'
-type=text name=state maxlength=2 value='$st'>
+type=text name=state maxlength=2 value="$st">
 <span class=opt_help>(optional)</span>
 </td>
 </tr>
@@ -213,14 +221,14 @@ sub import2 {
     my $tmp_fname = "/tmp/msg_upload.csv";
     my $fh = $q->upload('import_file');
     if (! defined $fh) {
-        $msg = red("No upload :(");
+        $result = red("No upload :(");
         return;
     }
     # Upgrade the handle to one compatible with IO::Handle:
     my $fh_handle = $fh->handle;
     my $out;
     if (!open $out, '>', $tmp_fname) {
-        $msg = red("Cannot create $tmp_fname");
+        $result = red("Cannot create $tmp_fname");
         return;
     }
     binmode($out);
@@ -233,7 +241,7 @@ sub import2 {
     close $fh_handle;
     my $in;
     if (!open $in, '<', $tmp_fname) {
-        print "Cannot open $tmp_fname\n";
+        $result = "Cannot open $tmp_fname\n";
         return;
     }
     my $get_message_sth = $dbh->prepare(<<'EOS');
@@ -260,6 +268,18 @@ EOS
     my $brigade_name = trim($P{brigade_name}) || '';
     my $city = trim($P{city}) || '';
     my $state = trim(uc $P{state}) || '';
+    my $date_col = trim(uc $P{date_col});
+    my $msg_col = trim(uc $P{msg_col});
+    if ($date_col !~ m{\A[A-Z]+\z}xms) {
+        $result = "Illegal date column: $date_col";
+        return;
+    }
+    if ($msg_col !~ m{\A[A-Z]+\z}xms) {
+        $result = "Illegal message column: $msg_col";
+        return;
+    }
+    $date_col = ord($date_col) - ord('A');
+    $msg_col = ord($msg_col) - ord('A');
     $meta_cookie = $q->cookie(
         -name    => 'message_library',
         -value   => "$brigade_name|$city|$state",
@@ -270,23 +290,20 @@ EOS
     my $duplicate = 0;
     my $dt_upd = 0;
     my $status_msg;
+    my $csv = Text::CSV_PP->new();
     LINE:
-    while (my $line = <$in>) {
-        $line =~ s{[\r\n]+}{}xms;         # remove end of line characters
-        $line =~ s{\A["']|["']\z}{}xmsg;  # in case the whole line is quoted
-        $line = uc $line;                 # force upper case
-        next LINE unless $line =~ m{\S}xms;
-        if (index($line, ',') < 0) {
-            # no comma - just a message
-            # date will be today
-            my $message = uc trim $line;
-            $message =~ s{\A " (.*) "\z}{$1}xms;
+    while (my $aref = $csv->getline($in)) {
+        my $dt = trim($aref->[$date_col]);
+        my $message = uc(trim($aref->[$msg_col]));
+        my $date = date($dt);
+        if ($date) {
+            my $d8 = $date->as_d8();
             $get_message_sth->execute($message);
             if (my $href = $get_message_sth->fetchrow_hashref()) {
                 # duplicate?  Is it older?
-                if ($href->{mdate} < $today) {
+                if ($href->{mdate} < $d8) {
                     # update the date
-                    $upd_dt_sth->execute($today, $href->{id});
+                    $upd_dt_sth->execute($d8, $href->{id});
                     ++$dt_upd;
                 }
                 else {
@@ -294,7 +311,7 @@ EOS
                 }
             }
             else {
-                $add_sth->execute($today, $message,
+                $add_sth->execute($d8, $message,
                                   $brigade_name, $city, $state);
                 push @mids, $dbh->last_insert_id(undef, undef,
                                                  'messages', undef);
@@ -302,37 +319,11 @@ EOS
                 log_it("imported $message");
             }
         }
-        elsif ($line =~ m{\A ([^,]+) , (.*) \z}xms) {
-            my $dt = trim $1;
-            my $message = trim $2;
-            $message =~ s{\A " (.*) "\z}{$1}xms;
-            my $date = date($dt);
-            if ($date) {
-                $get_message_sth->execute($message);
-                if (my $href = $get_message_sth->fetchrow_hashref()) {
-                    # duplicate?  Is it older?
-                    my $d8 = $date->as_d8();
-                    if ($href->{mdate} < $d8) {
-                        # update the date
-                        $upd_dt_sth->execute($d8, $href->{id});
-                        ++$dt_upd;
-                    }
-                    else {
-                        ++$duplicate;
-                    }
-                }
-                else {
-                    $add_sth->execute($date->as_d8(), $message,
-                                      $brigade_name, $city, $state);
-                    push @mids, $dbh->last_insert_id(undef, undef,
-                                                     'messages', undef);
-                    ++$n;
-                    log_it("imported $message");
-                }
-            }
-            elsif (lc $dt ne 'date') {
-                $status_msg .= red("Invalid date:") . " $dt - message not imported<br>";
-            }
+        elsif ($dt =~ m{date}xms) {
+            # ignore the header line
+        }
+        else {
+            $status_msg .= red("Invalid date:") . " $dt - message not imported<br>";
         }
     }
     close $in;
@@ -806,13 +797,13 @@ sub add_message {
 <td><input style='text-transform: uppercase;' type=text name=new_message size=60 value='$mess'></td>
 </tr>
 <tr>
-<td align=right>Brigade Name</td><td><input type=text name=brigade_name size=37 value='$bn'><span class=opt_help>(optional)</span></td>
+<td align=right>Brigade Name</td><td><input type=text name=brigade_name size=37 value="$bn"><span class=opt_help>(optional)</span></td>
 </tr>
 <tr>
 <td align=right>City</td>
-<td><input type=text name=city size=26 value='$ct'>
+<td><input type=text name=city size=26 value="$ct">
 State <input style='text-transform: uppercase; width: 18mm;'
-       type=text name=state maxlength=2 value='$st'>
+       type=text name=state maxlength=2 value="$st">
        <span class=opt_help>(optional)</span>
 </td>
 </tr>
@@ -840,9 +831,6 @@ sub new_message {
         $msg .= red("Invalid date:") . " $date - message not added<p>";
         return;
     }
-    # duplicate message?
-    # if so, check the date.
-    #
     my $get_message_sth = $dbh->prepare(<<'EOS');
 
         SELECT id, mdate
@@ -851,12 +839,35 @@ sub new_message {
       ORDER BY mdate desc
 
 EOS
+    if ($message =~ m{[.]\z}xms) {
+        # it ends in a period
+        # withOUT the period is the message already there?
+        my $mess_sans = $message;
+        $mess_sans =~s{[. ]+\z}{}xms;
+        $get_message_sth->execute($mess_sans);
+        my $href = $get_message_sth->fetchrow_hashref();
+        if ($href) {
+            # yes
+            my $existing_dt = date($href->{mdate});
+            if ($existing_dt > $dt) {
+                $result .= red("Duplicate message with more recent date:") . " $mess_sans<p>";
+            }
+            else {
+                # update the date, don't add a duplicate
+                $upd_dt_sth->execute($dt->as_d8(), $href->{id}); 
+            }
+            return;
+        }
+    }
+    # duplicate message?
+    # if so, check the date.
+    #
     $get_message_sth->execute($message);
     my $href = $get_message_sth->fetchrow_hashref();
     if ($href) {
         my $existing_dt = date($href->{mdate});
         if ($existing_dt > $dt) {
-            $msg .= red("Duplicate message with older date:") . " $message<p>";
+            $result .= red("Duplicate message with more recent date:") . " $message<p>";
             return;
         }
         else {
@@ -1083,11 +1094,6 @@ sub search_messages {
     elsif($term eq 'CT') {
         log_it('counts');
         show_counts();
-        return;
-    }
-    elsif ($term eq 'D') {
-        $tab = 'messages';
-        $P{order} ='mdate desc, message asc';
         return;
     }
     elsif ($term eq 'S') {
