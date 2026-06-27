@@ -1269,6 +1269,7 @@ EOSC
     print <<"EOH";
 <html>
 <head>
+<title>Visibility Brigade Message Library</title>
 <meta charset='UTF-8'>
 <style>
 .tt {   /* for the topic table */
