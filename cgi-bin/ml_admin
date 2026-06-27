@@ -36,6 +36,14 @@ sub trim {
     $s;
 }
 
+sub red_cnt {
+    my ($count) = @_;
+    if ($count == 1) {
+        return '';
+    }
+    return (('&nbsp;' x 3) . "<span class=red>$count</span>");
+}
+
 
 use CGI;
 use CGI::Carp qw/
@@ -132,6 +140,7 @@ sub msg_fmt {
                . "</a>"
                . $space
                . "$href->{topics_desc}"
+               . red_cnt($href->{count})
                . "\n"
         )
     );
@@ -183,8 +192,64 @@ EOS
 EOH
 }
 
+sub same_letters {
+    $result = <<"EOH";
+Messages with the Same Letters and different punctuation:
+<p>
+<form action='$cgi_bin_mla'>
+<input type=hidden name=cmd value='update_sl'>
+EOH
+    my $all_sth = $dbh->prepare(<<'EOS');
+        SELECT *
+          FROM messages
+      ORDER BY mdate asc
+EOS
+    $all_sth->execute();
+    my %data;
+    while (my $href = $all_sth->fetchrow_hashref()) {
+        my $msg = $href->{message};
+        $msg =~ s{[^A-Z0-9]}{}xmsg;
+        $data{$msg} .= "$href->{id} ";
+    }
+    for my $k (sort keys %data) {
+        if ($data{$k} =~ m{[ ]\d}xms) {
+            # more than one instance of a message
+            my @ids = split ' ', $data{$k};
+            my $nids = @ids;
+            my $ids = join ', ', @ids;
+            my $get_msgs_sth = $dbh->prepare(<<"EOS");
+
+        SELECT *
+          FROM messages
+         WHERE id in ($ids)
+      ORDER BY mdate
+
+EOS
+            $get_msgs_sth->execute();
+            my $first = 1;
+            while (my $href = $get_msgs_sth->fetchrow_hashref()) {
+                $result .= "<input style='width: 15mm;' type=text name=$href->{id}> $href->{message}"
+                        .  red_cnt($href->{count})
+                        .  "<br>\n";
+                $first = 0;
+            }
+            $result .= "<p>\n";
+        }
+    }
+    $result .= <<'EOH';
+<input class=sub type=submit value='Submit'>
+</form>
+EOH
+    return;
+
+}
+
 sub search_messages {
     my $sterm = $search_term;
+    if (lc $search_term eq 'sl') {
+        same_letters();
+        return;
+    }
     if ($search_term !~ m{\A'.*'\z}xms) {
         $search_term =  "'%$search_term%'";
     }
@@ -346,6 +411,27 @@ $result
 </body>
 </html>
 EOH
+}
+
+sub update_sl {
+    my $del_sth = $dbh->prepare(<<'EOS');
+        DELETE
+          FROM messages
+         WHERE id = ?
+EOS
+    my $upd_sth = $dbh->prepare(<<'EOS');
+        UPDATE messages
+           SET count = count + ?
+         WHERE id = ?
+EOS
+    for my $id (keys %P) {
+        if ($P{$id} eq 'd') {
+            $del_sth->execute($id);
+        }
+        elsif ($P{$id} =~ m{\A \d+ \z}xms) {
+            $upd_sth->execute($P{$id}, $id);
+        }
+    }
 }
 
 sub del_msgs {
@@ -573,7 +659,7 @@ EOS
 <input type=hidden name=cmd value=edit_msg2>
 <input type=hidden name=id value=$id>
 <table cellpadding=5>
-<tr><th>Date</th><td><input type=text name=mdate value="$href->{mdate}" size=8></td></tr>
+<tr><th>Date</th><td><input type=text name=mdate value="$href->{mdate}" size=8><span style='margin-left: 1in;'>Count</span> <input type=text name=count value='$href->{count}' size=3></td></tr>
 <tr><th>Message</th><td><input style='text-transform: uppercase;' type=text name=message value="$href->{message}" size=70 autofocus></td></tr>
 <tr><th>Brigade Name</th><td><input type=text name=brigade_name value="$href->{brigade_name}" size=30></td></tr>
 <tr><th>City</th><td><input type=text name=city value="$href->{city}" size=40>
@@ -592,7 +678,8 @@ sub edit_msg2 {
                message = ?,
                brigade_name = ?,
                city = ?,
-               state = ?
+               state = ?,
+               count = ?
          WHERE id = ?
 EOS
     $put_msg_sth->execute(
@@ -601,6 +688,7 @@ EOS
         $P{brigade_name},
         $P{city},
         uc $P{state},
+        $P{count},
         $P{id}
     );
 }
@@ -677,6 +765,9 @@ elsif ($search_term eq 'LG CLEAR') {
 }
 elsif ($search_term) {
     search_messages();
+}
+elsif ($cmd eq 'update_sl') {
+    update_sl();
 }
 elsif ($cmd eq 'del_msg') {
     del_msgs();

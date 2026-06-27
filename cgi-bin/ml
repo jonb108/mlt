@@ -246,7 +246,7 @@ sub import2 {
     }
     my $get_message_sth = $dbh->prepare(<<'EOS');
 
-        SELECT id, mdate
+        SELECT *
           FROM messages
          WHERE message = ?
       ORDER BY mdate desc
@@ -258,9 +258,11 @@ EOS
           INTO messages
                (mdate, message,
                 brigade_name, city, state,
+                count,
                 topics_desc)
         VALUES (?, ?,
                 ?, ?, ?,
+                1,
                 '')
 
 EOS
@@ -309,6 +311,15 @@ EOS
                 else {
                     ++$duplicate;
                 }
+                # in any case bump the count
+                my $bump_count_sth = $dbh->prepare(<<'EOS');
+
+                    UPDATE messages
+                       SET count = count + 1
+                     WHERE id = ?
+
+EOS
+                $bump_count_sth->execute($href->{id});
             }
             else {
                 $add_sth->execute($d8, $message,
@@ -495,8 +506,18 @@ sub msg_fmt {
                "<a class=black href='$adj'>"
              . msg_green($href->{message})
              . ($mobile? '<br>': $space)
-             . "$href->{topics_desc}</a>")
+             . "$href->{topics_desc}</a>"
+             . red_cnt($href->{count})
+        )
     );
+}
+
+sub red_cnt {
+    my ($count) = @_;
+    if ($count == 1) {
+        return '';
+    }
+    return (('&nbsp;' x 3) . "<span class=red>$count</span>");
 }
 
 # given a message id
@@ -556,7 +577,8 @@ sub disp_topics {
         $href = $get_msg_sth->fetchrow_hashref();
     }
     if ($href) {
-        $message = $href->{message};
+        $message = $href->{message}
+                 . red_cnt($href->{count});
         $meta = meta($href, 1);
         if ($meta) {
             $meta = "<br>$meta";;
@@ -833,7 +855,7 @@ sub new_message {
     }
     my $get_message_sth = $dbh->prepare(<<'EOS');
 
-        SELECT id, mdate
+        SELECT *
           FROM messages
          WHERE message = ?
       ORDER BY mdate desc
@@ -868,21 +890,33 @@ EOS
         my $existing_dt = date($href->{mdate});
         if ($existing_dt > $dt) {
             $result .= red("Duplicate message with more recent date:") . " $message<p>";
-            return;
         }
         else {
             # update the date, don't add a duplicate
             $upd_dt_sth->execute($dt->as_d8(), $href->{id}); 
-            return;
         }
+        # in any case bump the count
+        my $bump_count_sth = $dbh->prepare(<<'EOS');
+
+            UPDATE messages
+               SET count = count + 1
+             WHERE id = ?
+
+EOS
+        $bump_count_sth->execute($href->{id});
+        return;     # don't add a new one
     }
     my $add_message_sth = $dbh->prepare(<<'EOS');
         
         INSERT
           INTO messages
-               (mdate, message, brigade_name, city, state, topics_desc)
+               (mdate, message,
+                brigade_name, city, state,
+                count,
+                topics_desc)
         VALUES (?, ?,
                 ?, ?, ?,
+                1,
                 '')
 
 EOS

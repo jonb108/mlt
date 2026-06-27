@@ -23,6 +23,10 @@ h4 {
     color: darkgreen;
     margin-left: .5in;
 }
+.black {
+    color: black;
+    font-weight: normal;
+}
 ul {
     margin-top: 5mm;
     margin-bottom: 5mm;
@@ -45,24 +49,71 @@ h3 {
 .bl {
     color: blue;
 }
+pre {
+    margin-left: .5in;
+    color: green;
+    font-weight: bold;
+    font-size: 20pt;
+}
 </style>
 </head>
 <body>
 <h1>VB Message Library Admin</h1>
 This administrative site is <i>only</i> for special moderators of the VB Message Library <i>not</i> the public.
 <h3>Deleting Messages</h3>
-Search for a keyword.   See the list of messages.  Check one or more of the messages (click on the little square or the date).  Click on <span class=gr>Delete Checked Messages</span>.
+Search for a keyword.   See the list of messages.  Check one or more of the messages (click on the little square or the date NOT the message itself).  Click on <span class=gr>Delete Checked Messages</span>.
 <h3>Editing A Message</h3>
-Search for a keyword.   See the list of messages.  Click on the message itself.  See the dialog with the date, message, brigade name, city, and state.   Change whatever you wish.  Click on <span class=gr>Submit</span>.
+Search for a keyword.   See the list of messages.  Click on the message itself.  See the dialog with the date, count, message, brigade name, city, and state.   Change whatever you wish.  Click on <span class=gr>Submit</span>.
 <h3>Deleting Topics</h3>
 Click on <span class=bl>Topics</span>.  See the list of Topics.  Check one or more topics by clicking on the little squares - NOT on the topic description.  Click on <span class=gr>Delete Checked Topics</span>.
 <h3>Editing a Topic</h3>
 Click on <span class=bl>Topics</span>.  See the list of Topics.  Click on one of the topic descriptions.  See the dialog with the topic description.  Edit it however you wish.  Click on <span class=gr>Submit</span>. 
+<h3>Collapsing Messages that differ only in Punctuation</h3>
+Message 'clutter' happens when you have messages like these:
+<pre>
+RELEASE FILES NOT BOMBS!
+RELEASE FILES | NOT BOMBS!
+RELEASE FILES NOT BOMBS
+</pre>
+These messages differ only in punctuation.
+Ideally, you would only have <i>one</i> of them.
+<p>
+If you enter the string SL in the search text field you
+will see sets of messages that have the <b>S</b>ame <b>L</b>etters and differ
+only in punctuation.  There will be a small text field before
+each message and a Submit button at the bottom.
+In each set of messages you can choose any one of them to represent the others
+and delete the rest like so: 
+<pre>
+<span class=black>2</span>  RELEASE FILES NOT BOMBS!
+<span class=black>d</span>  RELEASE FILES | NOT BOMBS!
+<span class=black>d</span>  RELEASE FILES NOT BOMBS
+</pre>
+The first one will have its 'count' field increased by 2 to indicate
+that 2 other messages were similar.  The second and third ones will
+be deleted.
+<p>
+Note that if messages have a count > 1 it will be shown in red.
+Here is another example:
+<pre>
+MY BODY, MY CHOICE <span class=red>3</span>
+MY BODY = MY CHOICE
+MY BODY. MY CHOICE. <span class=red>2</span>
+MY BODY MY CHOICE <span class=red>4</span>
+</pre>
+Choosing the last one as "best" you would add 6 (3+1+2) to the count of the last one and delete the other 3.
+<pre>
+<span class=black>d</span>  MY BODY, MY CHOICE <span class=red>3</span>
+<span class=black>d</span>  MY BODY = MY CHOICE
+<span class=black>d</span>  MY BODY. MY CHOICE. <span class=red>2</span>
+<span class=black>6</span>  MY BODY MY CHOICE <span class=red>4</span>
+</pre>
 <h3>Regeneration</h3>
-To ensure that the topics and counts are accurate you can click on
+After several deletions and other edits
+you should ensure that the topics and counts are accurate by clicking on
 <span class=bl>Regen</span>.  This will tidy things up.
-<h3>Viewing the normal VB Message Library</h3>
+<h3>Viewing the VB Message Library</h3>
 You can click on the title at the top (VB Message Library Admin) and you
-will see the normal public VB Message Library site.
+will see the VB Message Library site as non-admin people see it.
 </body>
 </html>
