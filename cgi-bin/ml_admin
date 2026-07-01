@@ -659,7 +659,7 @@ EOS
 <input type=hidden name=cmd value=edit_msg2>
 <input type=hidden name=id value=$id>
 <table cellpadding=5>
-<tr><th>Date</th><td><input type=text name=mdate value="$href->{mdate}" size=8><span style='margin-left: 1in;'>Count</span> <input type=text name=count value='$href->{count}' size=3></td></tr>
+<tr><th>Date</th><td><input type=text name=mdate value="$href->{mdate}" size=10><span style='margin-left: 1in;'>Count</span> <input type=text name=count value='$href->{count}' size=3></td></tr>
 <tr><th>Message</th><td><input style='text-transform: uppercase;' type=text name=message value="$href->{message}" size=70 autofocus></td></tr>
 <tr><th>Brigade Name</th><td><input type=text name=brigade_name value="$href->{brigade_name}" size=30></td></tr>
 <tr><th>City</th><td><input type=text name=city value="$href->{city}" size=40>
