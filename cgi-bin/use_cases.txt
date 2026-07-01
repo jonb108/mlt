@@ -1,0 +1,73 @@
+Read Only - open to the public
+=========
+- Home page - see 60 most recent messages
+    date, message, topics, count (if > 1)
+- Show All at the bottom to see *all*
+- Enter search term - see matching messages
+- Search+
+    try all fields
+    see matching messages
+- Click on Topics
+    * see all topics - alpha
+        description, count
+    * Click on Count - by count
+    * Click on Topic - alpha 
+    * Click on a topic - see messages with that topic
+- Recent (aka Home)
+- Cities
+- Counts
+- Top Title (aka Home)
+- click on a message
+    see message, count
+    see brigade name, city, state
+    see checkboxes and submit button
+    Keyword field - if press submit without entering the valid keyword
+        Incorrect keyword :(
+    Can click on the message again to copy to clipboard
+    Click on Title to get back home
+
+Write Modify - need secret keyword
+============
+4 things to do:
+
+- Add Message
+    keyword (has focus and red star)
+    enter date, message, brigade name, city, state
+    if incorrect keyword
+        get error
+    if correct keyword
+        keyword is saved in cookie
+        as is brigade name, city, state
+            which are displayed next time you add a message
+    then you adjust topics on the message
+- Add new Topics
+    enter keyword (the  focus is on keyword with red star)
+    and 5 topics
+    if incorrect keyword
+        get error
+    if correct keyword
+        topics are added (no dups)
+        correct keyword is saved in cookie
+        along with any existing brigade name, city, state
+- Adjust Topics on message
+        3 ways - 1) after add message
+                 2) click on message
+                 3) multiple imported messages
+    focus on Keyword - filled in for you if it was saved
+    then checkbox topics, submit
+    if submit...
+        if incorrect keyword
+            get error message
+        if correct keyword
+            save keyword in cookie along with
+            existing brigade name, city, state
+- Import messages from .csv file
+    focus on Keyword (with red star)
+    enter file, 2 columns, brigade name, city, state
+    if incorrect keyword
+        error message
+    if correct keyword
+        save it in cookie
+        along with brigade name, city, state
+    then adjust topics for each imported non-duplicate message
+        the keyword will be supplied (and saved) each time
