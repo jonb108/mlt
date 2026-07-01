@@ -244,10 +244,35 @@ EOH
 
 }
 
+sub short_msgs {
+    my ($max_let, $first_id) = @_;
+    my $sth = $dbh->prepare(<<'EOS');
+
+        SELECT *
+          FROM messages
+         WHERE id > ?
+      ORDER BY id
+
+EOS
+    $sth->execute($first_id);
+    while (my $href = $sth->fetchrow_hashref()) {
+        my $omsg = $href->{message};
+        my $msg = $omsg;
+        $msg =~ s{[^A-Z]}{}xmsg;
+        if (length($msg) <= $max_let) {
+            $result .= "$omsg<br>";    
+        }
+    }
+}
+
 sub search_messages {
     my $sterm = $search_term;
     if (lc $search_term eq 'sl') {
         same_letters();
+        return;
+    }
+    if ($search_term =~ m{\A sh \s* (\d+) \s+ (\d+) \z}xmsi) {
+        short_msgs($1, $2);
         return;
     }
     if ($search_term !~ m{\A'.*'\z}xms) {
@@ -400,7 +425,7 @@ pre {
 </style>
 </head>
 <body>
-<h1><a style='color:black' href=$cgi_bin_ml?tab=messages>VB Message Library Admin</a></h1>
+<h1><a style='color:black' href=$cgi_bin_ml?tab=messages>VB Message Library <span class=red>Admin</span></a></h1>
 <form action=$cgi_bin_mla>
 Search Messages for <input type=text name=search_term size=15 $focus style='text-transform: uppercase'>
 <a style='margin-left: .5in' href=$cgi_bin_mla?cmd=topics>Topics</a>
