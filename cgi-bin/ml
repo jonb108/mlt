@@ -191,7 +191,7 @@ sub import1 {
 <table cellpadding=5>
 <tr>
 <td align=right><span class=red>*</span> Keyword</td>
-<td><input type=$secure_type name=kw size=18 value="$kw" autofocus></td>
+<td><input type=$secure_type name=kw size=25 value="$kw" autofocus></td>
 </tr>
 <tr>
 <td align=right>CSV File
@@ -566,8 +566,12 @@ sub adjust_topics {
     $get_msg_sth->execute($message_id);
     my $href = $get_msg_sth->fetchrow_hashref();
     log_it("adjust topic for $href->{message}");
+    my ($bn, $ct, $st, $kw) = ('') x 4;
+    if ($cookie) {
+        ($bn, $ct, $st, $kw) = split /[|]/, $cookie;
+    }
     disp_topics($message_id,
-                1, 'description asc', 0);
+                1, 'description asc', 0, '', '', $kw);
 }
 
 #
@@ -619,7 +623,7 @@ sub disp_topics {
         ($bn, $ct, $st, $kw0) = split /[|]/, $cookie;
     }
     if (! $links) {
-        $keyword = "<span class=red>*</span> Keyword <input type=$secure_type name=kw value='$kw' size=18 autofocus><p>";
+        $keyword = "<span class=red>*</span> Keyword <input type=$secure_type name=kw value='$kw' size=25 autofocus><p>";
     }
     my %is_current_topic;
     my $current_topics;
@@ -864,7 +868,7 @@ sub add_message {
 <table cellpadding=5>
 <tr>
 <td align=right><span class=red>*</span> Keyword</td>
-<td><input type=$secure_type name=kw size=18 value='$kw' autofocus></td>
+<td><input type=$secure_type name=kw size=25 value='$kw' autofocus></td>
 </tr>
 <tr>
 <td align=right>Date</td>
@@ -1015,7 +1019,7 @@ sub add_topic {
 <form method=post action=$cgi_bin_ml>
 <input type=hidden name=secure_type value=$secure_type>
 <h3>Adding topics</h3>
-<span class=red>*</span> Keyword</span> <input type=$secure_type name=kw size=18 value='$kw' autofocus>
+<span class=red>*</span> Keyword</span> <input type=$secure_type name=kw size=25 value='$kw' autofocus>
 <p>
 <input type=hidden name=cmd value=new_topic>
 1 <input class=pp type=text name=new_topic1 size=40 autofocus><br>
@@ -1519,7 +1523,7 @@ if ($tab eq 'messages') {
 <a class=left href='$cgi_bin_ml?secure_type=$secure_type&cmd=add_message'>Add Message</a>
 <a class=left href='$cgi_bin_ml?secure_type=$secure_type&cmd=import'>Import</a>
 <a class=left href='$cgi_bin_ml?secure_type=$secure_type&tab=topics&order=description+asc'>Topics</a>
-<a target=_blank class=left href='/help2.html' accesskey='h'>Help</a>
+<a target=_blank class=left href='/help3.html' accesskey='h'>Help</a>
 $msg
 <form action=$cgi_bin_ml>
 <input type=hidden name=secure_type value=$secure_type>
