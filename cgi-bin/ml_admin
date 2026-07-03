@@ -250,17 +250,20 @@ sub short_msgs {
 
         SELECT *
           FROM messages
-         WHERE id > ?
+         WHERE id >= ?
       ORDER BY id
 
 EOS
+    my $space = "&nbsp;" x 3;
     $sth->execute($first_id);
     while (my $href = $sth->fetchrow_hashref()) {
         my $omsg = $href->{message};
         my $msg = $omsg;
         $msg =~ s{[^A-Z]}{}xmsg;
-        if (length($msg) <= $max_let) {
-            $result .= "$omsg<br>";    
+        my $l = length($msg);
+        if ($l <= $max_let) {
+            $result .= "<span class=green>$omsg</span>"
+                    .  sprintf("$space %4d %3d<br>", $href->{id}, $l)
         }
     }
 }

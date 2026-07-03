@@ -52,6 +52,17 @@ my %P = $q->Vars();
 my $cmd = $P{cmd};
 my $meta_cookie;
 
+my $keyword = 'OverpassPower!2026';
+my $incorrect_keyword = "<span style='color: red'>Incorrect keyword</span> &#128533";
+#
+# 1) adding a message
+# 2) adding topics
+# 3) adjusting topics
+# 4) importing messages
+# text or password for the input field?
+#
+my $secure_type = $P{secure_type} eq 'text'? 'text': 'password';
+
 use DBI;
 my $dbh = DBI->connect(
     'dbi:mysql:logical9_moliere:host2047.hostmonster.com',
@@ -86,8 +97,8 @@ my $result = '';
 my $space = '&nbsp;' x 4;
 my $cp = 2;
 my $ncol = 3;
-# EDIT!
-my $cgi_bin_ml = 'https://vbmessages.org/cgi-bin/ml';
+# EDIT! no 2
+my $cgi_bin_ml = "https://vbmessages.org/cgi-bin/ml";
 my $tab = $P{tab} || 'messages';
 
 sub repl_quote {
@@ -159,27 +170,34 @@ sub meta {
             }
             $meta .= $st;
         }
-        if ($with_date) {
-            $meta .= " on " . date($href->{mdate})->format("%D");
-        }
-        $meta = "$meta<br>";
     }
+    if ($with_date) {
+        $meta .= " on " . date($href->{mdate})->format("%D");
+    }
+    $meta .= "<br>";
     return $meta;
 }
 
 # ask for an import file
 sub import1 {
-    my ($bn, $ct, $st) = ('') x 3;
+    my ($bn, $ct, $st, $kw) = ('') x 4;
     if ($cookie) {
-        ($bn, $ct, $st) = split /[|]/, $cookie;
+        ($bn, $ct, $st, $kw) = split /[|]/, $cookie;
     }
     print <<"EOH";
 <h3>Import Messages</h3>
 <form method=post enctype="multipart/form-data"> 
+<input type=hidden name=secure_type value=$secure_type>
 <table cellpadding=5>
 <tr>
-<td align=right>CSV File</td>
-<td><input type=file name=import_file></td>
+<td align=right><span class=red>*</span> Keyword</td>
+<td><input type=$secure_type name=kw size=18 value="$kw" autofocus></td>
+</tr>
+<tr>
+<td align=right>CSV File
+</td>
+<td><input type=file name=import_file>
+</td>
 </tr>
 <tr>
 <tr>
@@ -218,6 +236,11 @@ EOH
 
 # process the import file
 sub import2 {
+    my $kw = $P{kw};
+    if ($kw ne $keyword) {
+        $result = $incorrect_keyword;
+        return;
+    }
     my $tmp_fname = "/tmp/msg_upload.csv";
     my $fh = $q->upload('import_file');
     if (! defined $fh) {
@@ -284,7 +307,7 @@ EOS
     $msg_col = ord($msg_col) - ord('A');
     $meta_cookie = $q->cookie(
         -name    => 'message_library',
-        -value   => "$brigade_name|$city|$state",
+        -value   => "$brigade_name|$city|$state|$kw",
         -expires => '+20y',
     );
     my @mids;
@@ -354,7 +377,7 @@ EOS
             my $mids = "@mids[1..$#mids]";
             init();
             disp_topics($mids[0],
-                        0, 'description asc', 0, $mids, $status_msg);
+                        0, 'description asc', 0, $mids, $status_msg, $kw);
         }
         else {
             $msg .= $status_msg;
@@ -398,8 +421,12 @@ EOS
     my $nmids = @mids;
     my $pl = $nmids == 1? '': 's';
     init();
+    my ($bn, $ct, $st, $kw0);
+    if ($cookie) {
+        ($bn, $ct, $st, $kw0) = split /[|]/, $cookie;
+    }
     disp_topics($first_mid,
-                0, 'description asc', 0, "@mids", "$nmids more message$pl");
+                0, 'description asc', 0, "@mids", "$nmids more message$pl", $kw0);
 }
 
 sub record_count {
@@ -451,7 +478,7 @@ EOS
         my $city = $href->{city};
         $cnt_sth->execute($state, $city);
         my ($count) = $cnt_sth->fetchrow_array();
-        my $url = "$cgi_bin_ml?cmd=search_plus2&city_search=$city+&state_search=$state&exact=1";
+        my $url = "$cgi_bin_ml?secure_type=$secure_type&cmd=search_plus2&city_search=$city+&state_search=$state&exact=1";
         $result .= "$state - $city <a href='$url'>$count</a><br>\n";
     }
     $result .= "</div>";
@@ -495,7 +522,7 @@ sub show_counts {
 sub msg_fmt {
     my ($href) = @_;
     my $mid = $href->{id};
-    my $adj = "$cgi_bin_ml?cmd=adjust_topics&message_id=$mid";
+    my $adj = "$cgi_bin_ml?secure_type=$secure_type&cmd=adjust_topics&message_id=$mid";
     my $align = 'top';
     $q->Tr(
         $q->td({ valign => $align, width => '9%',
@@ -562,7 +589,7 @@ sub adjust_topics {
 #
 sub disp_topics {
     my ($first,
-        $old, $order, $links, $mids, $status_msg) = @_;
+        $old, $order, $links, $mids, $status_msg, $kw) = @_;
 
     my ($message, $message_id);
     my $meta = '';
@@ -579,10 +606,20 @@ sub disp_topics {
     if ($href) {
         $message = $href->{message}
                  . red_cnt($href->{count});
+    }
+    if ($href) {
         $meta = meta($href, 1);
-        if ($meta) {
-            $meta = "<br>$meta";;
-        }
+    }
+    if ($meta) {
+        $meta = "<br>$meta";;
+    }
+    my $keyword = '';
+    my ($bn, $ct, $st, $kw0) = ('') x 4;
+    if ($cookie) {
+        ($bn, $ct, $st, $kw0) = split /[|]/, $cookie;
+    }
+    if (! $links) {
+        $keyword = "<span class=red>*</span> Keyword <input type=$secure_type name=kw value='$kw' size=18 autofocus><p>";
     }
     my %is_current_topic;
     my $current_topics;
@@ -612,6 +649,8 @@ $status_msg
 <span style='color: green; margin-left: .3in;' id=copied></span>
 $meta
 <form method=post id=adjTopic action=$cgi_bin_ml>
+<input type=hidden name=secure_type value=$secure_type>
+$keyword
 <input type=hidden name=cmd value=adjust_topics2>
 <input type=hidden name=message_id value=$message_id>
 <input type=hidden name=current_topics value='$current_topics'>
@@ -646,7 +685,7 @@ EOS
         my $tid = $href->{id};
         my $desc = $href->{description};
         if ($links) {
-            print "<a href='$cgi_bin_ml?topic_search=$tid'>"
+            print "<a href='$cgi_bin_ml?secure_type=$secure_type&topic_search=$tid'>"
                 . "$desc</a> $href->{count}<p class=tt>\n";
         }
         else {
@@ -693,6 +732,20 @@ EOH
 # Journaling is used here.
 #
 sub adjust_topics2 {
+    my $kw = $P{kw};
+    if ($kw ne $keyword) {
+        $result = $incorrect_keyword;
+        return;
+    }
+    my ($bn, $ct, $st, $kw0) = ('') x 4;
+    if ($cookie) {
+        ($bn, $ct, $st, $kw0) = split /[|]/, $cookie;
+    }
+    $meta_cookie = $q->cookie(
+        -name    => 'message_library',
+        -value   => "$bn|$ct|$st|$kw",
+        -expires => '+20y',
+    );
     my $message_id = $P{message_id};
     my $current_topics = $P{current_topics};
     $dbh->begin_work;       # commit when all is well
@@ -785,7 +838,7 @@ EOS
         my $href = $get_msg_sth->fetchrow_hashref();
         init();
         disp_topics($mid,
-                    0, 'description asc', 0, "@mids", $status_msg);
+                    0, 'description asc', 0, "@mids", $status_msg, $kw);
     }
     else {
         $tab = 'messages';
@@ -800,18 +853,23 @@ sub add_message {
     if ($d8) {
         $dt = date($d8)->format('%D');
     }
-    my ($bn, $ct, $st) = ('') x 3;
+    my ($bn, $ct, $st, $kw) = ('') x 4;
     if ($cookie) {
-        ($bn, $ct, $st) = split /[|]/, $cookie;
+        ($bn, $ct, $st, $kw) = split /[|]/, $cookie;
     }
     print <<"EOH";
 <h3>Adding a message</h3>
 <form method=post action=$cgi_bin_ml>
+<input type=hidden name=secure_type value=$secure_type>
 <table cellpadding=5>
 <tr>
+<td align=right><span class=red>*</span> Keyword</td>
+<td><input type=$secure_type name=kw size=18 value='$kw' autofocus></td>
+</tr>
+<tr>
 <td align=right>Date</td>
-<td><input type=text name=message_date id=date size=8 value='$dt' autofocus style='text-transform: uppercase;'>
-<span class=info onclick="javascript:show_date_help();">&#9432;</span><span class=opt_help2>(Date the message was displayed)</span>
+<td><input type=text name=message_date id=date size=8 value='$dt' style='text-transform: uppercase;'>
+<span class=info onclick="javascript:show_date_help();">&#9432;</span><span style='color: green; margin-left: .3in; margin-right: .3in;'>(Date displayed on overpass)</span>
 </td>
 </tr>
 <tr>
@@ -842,7 +900,11 @@ EOH
 
 sub new_message {
     $tab = 'messages';
-    # what about XXS?
+    my $kw = $P{kw};
+    if ($kw ne $keyword) {
+        $result = $incorrect_keyword;
+        return;
+    }
     my $message = trim uc $P{new_message};
     if ($message !~ m{\S}xms) {
         return;
@@ -925,7 +987,7 @@ EOS
     my $state = trim(uc $P{state}) || '';
     $meta_cookie = $q->cookie(
         -name    => 'message_library',
-        -value   => "$brigade_name|$city|$state",
+        -value   => "$brigade_name|$city|$state|$kw",
         -expires => '+20y',
     );
     $add_message_sth->execute($dt->as_d8(), $message,
@@ -936,24 +998,31 @@ EOS
     my $message_id = $dbh->last_insert_id(undef, undef, 'messages', undef);
     init();
     disp_topics($message_id,
-                0, 'description asc', 0);
+                0, 'description asc', 0, '', '', $kw);
 }
 
 sub add_topic {
+    my ($bn, $ct, $st, $kw);
+    if ($cookie) {
+        ($bn, $ct, $st, $kw) = split /[|]/, $cookie;
+    }
     print <<"EOH";
-<h3>Adding topics</h3>
 <style>
 .pp {
     margin-bottom: 4mm;
 }
 </style>
 <form method=post action=$cgi_bin_ml>
+<input type=hidden name=secure_type value=$secure_type>
+<h3>Adding topics</h3>
+<span class=red>*</span> Keyword</span> <input type=$secure_type name=kw size=18 value='$kw' autofocus>
+<p>
 <input type=hidden name=cmd value=new_topic>
 1 <input class=pp type=text name=new_topic1 size=40 autofocus><br>
-2 <input class=pp type=text name=new_topic2 size=40 autofocus><br>
-3 <input class=pp type=text name=new_topic3 size=40 autofocus><br>
-4 <input class=pp type=text name=new_topic4 size=40 autofocus><br>
-5 <input class=pp type=text name=new_topic5 size=40 autofocus><br>
+2 <input class=pp type=text name=new_topic2 size=40><br>
+3 <input class=pp type=text name=new_topic3 size=40><br>
+4 <input class=pp type=text name=new_topic4 size=40><br>
+5 <input class=pp type=text name=new_topic5 size=40><br>
 <input type=submit class=sub value='Add'>
 </form>
 EOH
@@ -962,6 +1031,21 @@ EOH
 }
 
 sub new_topic {
+    my $kw = $P{kw};
+    if ($kw ne $keyword) {
+        $result = $incorrect_keyword;
+        return;
+    }
+    # save keyword in cookie
+    my ($bn, $ct, $st, $kw0) = ('') x 4;
+    if ($cookie) {
+        ($bn, $ct, $st, $kw0) = split /[|]/, $cookie;
+    }
+    $meta_cookie = $q->cookie(
+        -name    => 'message_library',
+        -value   => "$bn|$ct|$st|$kw",
+        -expires => '+20y',
+    );
     $tab = 'topics';
     my $get_topic_sth = $dbh->prepare(<<'EOS');
 
@@ -1093,6 +1177,7 @@ sub search_plus {
     print <<"EOH";
 <h3>Search Plus<span class=all_opt >(All fields are optional)</span></h3>
 <form method=get action=$cgi_bin_ml>
+<input type=hidden name=secure_type value=$secure_type>
 <input type=hidden name=cmd value=search_plus2>
 <table cellpadding=5>
 <tr><td align=right>Start Date</td><td><input type=text name=start_date id=date size=8 autofocus style='text-transform: uppercase;'>
@@ -1281,10 +1366,6 @@ EOSC
     font-size: 18pt;
     font-weight: normal;
 }
-.opt_help2 {
-    margin-left: 1.2in;
-    color: green;
-}
 .opt_help {
     position: absolute;
     left: 780;
@@ -1370,7 +1451,7 @@ input[type='checkbox']:checked {
 $script
 </head>
 <body>
-<h1><a style='color:black' href=$cgi_bin_ml?tab=messages accesskey='v'>VB Message Library</a></h1>
+<h1><a style='color:black' href='$cgi_bin_ml?secure_type=$secure_type&tab=messages' accesskey='v'>VB Message Library</a></h1>
 EOH
 }
 
@@ -1435,17 +1516,18 @@ if ($tab eq 'messages') {
 
     print <<"EOH";
 <span class=big>Messages</span>
-<a class=left href='$cgi_bin_ml?cmd=add_message'>Add Message</a>
-<a class=left href='$cgi_bin_ml?cmd=import'>Import</a>
-<a class=left href='$cgi_bin_ml?tab=topics&order=description+asc'>Topics</a>
-<a target=_blank class=left href=/help.html accesskey='h'>Help</a>
+<a class=left href='$cgi_bin_ml?secure_type=$secure_type&cmd=add_message'>Add Message</a>
+<a class=left href='$cgi_bin_ml?secure_type=$secure_type&cmd=import'>Import</a>
+<a class=left href='$cgi_bin_ml?secure_type=$secure_type&tab=topics&order=description+asc'>Topics</a>
+<a target=_blank class=left href='/help.html' accesskey='h'>Help</a>
 $msg
 <form action=$cgi_bin_ml>
+<input type=hidden name=secure_type value=$secure_type>
 Search for&nbsp;&nbsp;<input type=text name=search_term size=15 autofocus style='text-transform: uppercase'>
-$space<a href='$cgi_bin_ml?tab=messages&order=mdate+desc,message+asc&no_limit=0'>Recent</a>
-&nbsp;&nbsp;<a href='$cgi_bin_ml?search_term=cs'>Cities</a>
-$space<a href='$cgi_bin_ml?search_term=ct'>Counts</a>
-$space<a href='$cgi_bin_ml?search_plus=1'>Search+</a>
+$space<a href='$cgi_bin_ml?secure_type=$secure_type&tab=messages&order=mdate+desc,message+asc&no_limit=0'>Recent</a>
+&nbsp;&nbsp;<a href='$cgi_bin_ml?secure_type=$secure_type&search_term=cs'>Cities</a>
+$space<a href='$cgi_bin_ml?secure_type=$secure_type&search_term=ct'>Counts</a>
+$space<a href='$cgi_bin_ml?secure_type=$secure_type&search_plus=1'>Search+</a>
 </form>
 <p>
 EOH
@@ -1474,7 +1556,7 @@ EOS
         if ($n && $limit) {
             print <<"EOH";
 <p>
-<a style='margin-left: 1.9in;' href='$cgi_bin_ml?tab=messages&order=$order&no_limit=1' accesskey='S'>Show All</a>
+<a style='margin-left: 1.9in;' href='$cgi_bin_ml?secure_type=$secure_type&tab=messages&order=$order&no_limit=1' accesskey='S'>Show All</a>
 EOH
         }
     }
@@ -1485,16 +1567,20 @@ else {
     my $count_class = $P{order} =~ m{\A count}xms? 'class=cur_sort': '';
     print <<"EOH";
 <span class=big>Topics</span>
-<a class=left href=$cgi_bin_ml?cmd=add_topic accesskey='a'>Add Topics</a>
-<a class=left href=$cgi_bin_ml?tab=messages accesskey='m'>Messages</a>
-<a target=_blank class=left href=/help.html accesskey='h'>Help</a>
+<a class=left href='$cgi_bin_ml?secure_type=$secure_type&cmd=add_topic' accesskey='a'>Add Topics</a>
+<a class=left href='$cgi_bin_ml?secure_type=$secure_type&tab=messages' accesskey='m'>Messages</a>
+<a target=_blank class=left href='/help.html' accesskey='h'>Help</a>
 $msg
 Sort By
-<a $topic_class href='$cgi_bin_ml?tab=topics&order=description+asc' accesskey='t'>Topic</a>
-$space<a $count_class href='$cgi_bin_ml?tab=topics&order=count+desc,description+asc' accesskey='c'>Count</a>
+<a $topic_class href='$cgi_bin_ml?secure_type=$secure_type&tab=topics&order=description+asc' accesskey='t'>Topic</a>
+$space<a $count_class href='$cgi_bin_ml?secure_type=$secure_type&tab=topics&order=count+desc,description+asc' accesskey='c'>Count</a>
 <p>
 EOH
+    my ($bn, $ct, $st, $kw);
+    if ($cookie) {
+        ($bn, $ct, $st, $kw) = split /[|]/, $cookie;
+    }
     disp_topics(0,
-                0, $P{order} || 'description asc', 1);
+                0, $P{order} || 'description asc', 1, '', '', $kw);
 }
 end_html();
