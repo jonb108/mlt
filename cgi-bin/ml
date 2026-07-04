@@ -114,7 +114,7 @@ sub mixed {
 
 sub log_it {
     open my $out, '>>', "$dir/ml_log" or die "no $dir/ml_log: $!\n";
-    print {$out} "@_\n";
+    print {$out} scalar(localtime(time()-60*60)). " = $ENV{REMOTE_ADDR} = @_\n";
     close $out;
 }
 
@@ -180,6 +180,7 @@ sub meta {
 
 # ask for an import file
 sub import1 {
+    log_it("begin import");
     my ($bn, $ct, $st, $kw) = ('') x 4;
     if ($cookie) {
         ($bn, $ct, $st, $kw) = split /[|]/, $cookie;
@@ -385,6 +386,7 @@ EOS
     }
     else {
         $msg .= "0 messages imported";
+        log_it($msg);
         $tab = 'messages';
     }
 }
