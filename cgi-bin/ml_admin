@@ -244,40 +244,13 @@ EOH
 
 }
 
-sub short_msgs {
-    my ($max_let, $first_id) = @_;
-    my $sth = $dbh->prepare(<<'EOS');
-
-        SELECT *
-          FROM messages
-         WHERE id >= ?
-      ORDER BY id
-
-EOS
-    my $space = "&nbsp;" x 3;
-    $sth->execute($first_id);
-    while (my $href = $sth->fetchrow_hashref()) {
-        my $omsg = $href->{message};
-        my $msg = $omsg;
-        $msg =~ s{[^A-Z]}{}xmsg;
-        my $l = length($msg);
-        if ($l <= $max_let) {
-            $result .= "<span class=green>$omsg</span>"
-                    .  sprintf("$space %4d %3d<br>", $href->{id}, $l)
-        }
-    }
-}
-
 sub search_messages {
     my $sterm = $search_term;
     if (lc $search_term eq 'sl') {
         same_letters();
         return;
     }
-    if ($search_term =~ m{\A sh \s* (\d+) \s+ (\d+) \z}xmsi) {
-        short_msgs($1, $2);
-        return;
-    }
+    log_it("admin search for $search_term");
     if ($search_term !~ m{\A'.*'\z}xms) {
         $search_term =  "'%$search_term%'";
     }
@@ -290,7 +263,6 @@ sub search_messages {
 
 EOS
     $search_sth->execute();
-    log_it("admin search for $search_term");
     my $n = 0;
     my @rows;
     $result = '';
