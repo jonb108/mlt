@@ -1548,7 +1548,7 @@ if ($tab eq 'messages') {
 <a class=left href='$cgi_bin_ml?secure_type=$secure_type&cmd=add_message'>Add Message</a>
 <a class=left href='$cgi_bin_ml?secure_type=$secure_type&cmd=import'>Import</a>
 <a class=left href='$cgi_bin_ml?secure_type=$secure_type&tab=topics&order=description+asc'>Topics</a>
-<a target=_blank class=left href='/help4.html' accesskey='h'>Help</a>
+<a target=_blank class=left href='/ml_help.html' accesskey='h'>Help</a>
 $msg
 <form action=$cgi_bin_ml>
 <input type=hidden name=secure_type value=$secure_type>
@@ -1598,7 +1598,7 @@ else {
 <span class=big>Topics</span>
 <a class=left href='$cgi_bin_ml?secure_type=$secure_type&cmd=add_topic' accesskey='a'>Add Topics</a>
 <a class=left href='$cgi_bin_ml?secure_type=$secure_type&tab=messages' accesskey='m'>Messages</a>
-<a target=_blank class=left href='/help2.html' accesskey='h'>Help</a>
+<a target=_blank class=left href='/ml_help.html' accesskey='h'>Help</a>
 $msg
 Sort By
 <a $topic_class href='$cgi_bin_ml?secure_type=$secure_type&tab=topics&order=description+asc' accesskey='t'>Topic</a>

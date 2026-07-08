@@ -758,6 +758,12 @@ elsif ($search_term eq 'LG') {
     system("echo '<pre>'; tac $dir/ml_log | head -60; echo '</pre>'");
     exit;
 }
+elsif ($search_term =~ m{\A lg\s*(\d+)\z}xmsi) {
+    my $n = $1;
+    init();
+    system("echo '<pre>'; tac $dir/ml_log | head -$n; echo '</pre>'");
+    exit;
+}
 elsif ($search_term eq 'LG CLEAR') {
     init();
     system('mv $dir/ml_log $dir/ml_log.00; touch $dir/ml_log; echo cleared');
