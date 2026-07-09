@@ -648,10 +648,12 @@ EOS
     }
     if (! $links) {
         my $message2 = repl_quote($message);
+        my $message2_sans_count = $message2;
+        $message2_sans_count =~ s{[&].*}{}xms;  # trim off &nbsp;...<span...</span>
         print <<"EOH";
 $status_msg
 <p>
-<span class='green pointer' onclick='copy_to_clipboard("$message2")'>$message2</span>
+<span class='green pointer' onclick='copy_to_clipboard("$message2_sans_count")'>$message2</span>
 <span style='color: green; margin-left: .3in;' id=copied></span>
 $meta
 <form method=post id=adjTopic action=$cgi_bin_ml>
