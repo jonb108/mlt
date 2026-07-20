@@ -455,7 +455,7 @@ sub bulk_add {
             elsif ($l2 && $lt == 2) {
                 $key = $term;
                 $val = shift @terms;
-                if (! $val) {
+                if (! defined $val) {
                     $msg .= "missing number for $key<br>";
                     next TERM;
                 }
@@ -468,7 +468,7 @@ sub bulk_add {
         else {
             $key = $term;
             $val = shift @terms;
-            if (! $val) {
+            if (! defined $val) {
                 $msg .= "missing number for $key<br>";
                 next TERM;
             }
@@ -515,26 +515,29 @@ if ($cmd =~ m{\A ADD \s+ (\S.*) \z}xmsi) {
         }
     }
 }
-elsif ($cmd =~ m{\A SUB \s* (\S+) \z}xmsi) {
-    my $let = $1;
+elsif ($cmd =~ m{\A SUB \s* (\S.*) \z}xmsi) {
     if (! $br) {
         $msg = "No brigade";
     }
     else {
-        # decrement the letter count
-        if ($br{$let} > 0) {
-            my $n = --$br{$let};
-            $msg = "There "
-                 . (($n == 1)? "is": "are")
-                 . " now $n $let"
-                 ;
-            if ($n == 0) {
-                delete $br{$let};
-                $msg .= " so $let was removed";
+        # decrement the letter counts
+        my $lets = $1;
+        my @lets = split /\s+/, $lets;
+        for my $l (@lets) {
+            if ($br{$l} > 0) {
+                my $n = --$br{$l};
+                $msg .= "There "
+                     .  (($n == 1)? "is": "are")
+                     .  " now $n $l<br>"
+                     ;
+                if ($n == 0) {
+                    delete $br{$l};
+                    $msg .= " so $l was removed<br>";
+                }
             }
-        }
-        else {
-            $msg = "There are no $let!";
+            else {
+                $msg .= "There are no $l!<br>";
+            }
         }
     }
 }
@@ -676,7 +679,7 @@ elsif ($cmd =~ m{\A U \s+ (\d[\d/]*|T) \z}xms) {
         }
     }
 }
-elsif ($cmd =~ m{\A (\d[\d/]*|T) \s+ (.*) \z}xms) {
+elsif ($cmd =~ m{\A ([-]?\d[\d/]*|T) \s+ (.*) \z}xms) {
     if (! $br) {
         $msg = "No brigade";
     }

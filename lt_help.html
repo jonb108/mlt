@@ -149,9 +149,12 @@ The new name should have only letters and numbers.
 </pre>
 <span class=cmd>ADD &lt;LETTER&gt; ...</span><span style='margin-left: 1in;'>(increment the numbers for the letters)</span>
 <pre>
-    Example: ADD  S  S  U  Z          (add two S, a U, and a Z)
+    Example: ADD  S S U Z          (add two S, a U, and a Z)
 </pre>
-<span class=cmd>SUB &lt;LETTER&gt;</span><span style='margin-left: 1in;'>(decrement the number for the <i>one</i> letter)</span><br>
+<span class=cmd>SUB &lt;LETTER&gt; ...</span><span style='margin-left: 1in;'>(decrement the numbers for the letters)</span><br>
+<pre>
+    Example: SUB J E E            (deduct J and two E)
+</pre>
 <ul>
 (If there are none left the letter will be removed)
 </ul>
@@ -205,11 +208,12 @@ To add a message to the brigade's message history:
 
         4/5/2025
         4/5/25
-        4/5     (current year)
-        4       (current month/year)
-        T       (today)
+        4/5       (current year)
+        4          (current month/year)
+        T          (today)
+        -3         (3 days ago)
 </pre>
-If MESSAGE is just a dash ‘-’, the message on that date will be deleted
+If MESSAGE is just a dash ‘-’, the message(s) on that date will be deleted
 <p>
 With a successful Okay &#128077; &#128522; message displayed on the screen
 you can easily add it to the history with this:
@@ -228,7 +232,8 @@ In two columns: Date and Message with the most recent dates first.
 <p>
 At the bottom is a link: <span class=blue>CSV Export</span>.
 Clicking on it will download a comma-separated-value formatted file
-that you can open in a spreadsheet.
+that you can open in a spreadsheet.  You can also import this file
+into the VB Message Library.
 </ul>
 <h2>Messages for ALL Brigades</h2>
 <span class=cmd>LM</span><span style='margin-left: 1.2in;'>(show the unique messages from ALL brigades)</span>

@@ -1153,6 +1153,10 @@ sub search_plus2 {
         }
         push @where, "length(message) <= $max_len";
     }
+    my $topic_search = trim $P{topic_search};
+    if ($topic_search) {
+        push @where, "topics_desc like '%$topic_search%'";
+    }
     if (! @where) {
         $result = 'Nothing to search for!';
         return;
@@ -1171,8 +1175,14 @@ EOS
     while (my $href = $plus_sth->fetchrow_hashref()) {
         ++$n;
         if ($mess) {
-            $href->{message} =~ s{\Q$mess}
-                                 {<span class=highlight>$mess</span>}xmsg;
+            $href->{message}
+                =~ s{\Q$mess}
+                    {<span class=highlight>$mess</span>}xmsg;
+        }
+        if ($topic_search) {
+            $href->{topics_desc}
+                =~ s{(\Q$topic_search\E)}
+                    {<span class=highlight>$1</span>}xmsgi;
         }
         $result .= msg_fmt($href);
         if (! $exact) {
@@ -1188,7 +1198,8 @@ EOS
         $result = "No matching messages.";
     }
     else {
-        $result = $q->table({ cellpadding => $cp}, $result);
+        $result = $q->table({ cellpadding => $cp}, $result)
+                . "<p>$n message" . plural($n);
         if ($exact) {
             # city, state search
             $result = "Messages from " . mixed($city) . ", $state<p>\n"
@@ -1218,6 +1229,7 @@ Min Length</td><td><input type=text name=min_len size=5>
 &nbsp;
 Max Length <input type=text name=max_len size=5>
 </td></tr>
+<tr><td align=right>Topic</td><td><input type=text name=topic_search size=20></td></tr>
 <tr><td></td><td><input type=submit class=sub value='Search'></td></tr>
 </table>
 </form>
@@ -1307,10 +1319,15 @@ EOS
         $result = "No messages match '$term'.";
     }
     else {
-        $result = $q->table({ cellpadding => $cp}, $result);
+        $result = $q->table({ cellpadding => $cp}, $result)
+                . "<p>$n message" . plural($n);
     }
 }
 
+sub plural {
+    my ($n) = @_;
+    return $n == 1? '': 's';
+}
 
 sub topic_search {
     my $tid = $P{topic_search};
@@ -1344,7 +1361,8 @@ EOS
     }
     else {
         $result = "Messages with topic ". green($description) . "<p>"
-                . $q->table({ cellpadding => $cp }, $result);
+                . $q->table({ cellpadding => $cp }, $result)
+                . "<p>$n message" . plural($n);
     }
     log_it("topic search $description");
 }
@@ -1357,7 +1375,7 @@ sub init {
 function show_date_help() {
     newwin = window.open(
         'https://vbmessages.org/date_help.html', 'date help',
-        'popup=true,height=350,width=400'
+        'popup=true,height=400,width=400'
     );
     newwin.moveTo(600, 200);
     setTimeout(() => {
