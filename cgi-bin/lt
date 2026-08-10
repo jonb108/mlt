@@ -182,7 +182,7 @@ if ($csv_file) {
     $cmd = '';
 }
 
-$cmd =~ s{[^A-Z0-9:.;,)(/&%#\$"!?+=*@<> ~_-]}{'}xmsgi;    # no smart quotes 
+$cmd =~ s{[^A-Z0-9:.;,)(/&%#\$"!?+=*@<> ~_|-]}{'}xmsgi;    # no smart quotes 
     # I tried a smarter way and failed.
 
 $cmd =~ s{\A \s* | \s* \z}{}xmsg;   # trim leading, trailing space
