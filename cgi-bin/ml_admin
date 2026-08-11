@@ -425,11 +425,14 @@ EOS
          WHERE id = ?
 EOS
     for my $id (keys %P) {
-        if ($P{$id} eq 'd') {
+        if (lc $P{$id} eq 'd') {
             $del_sth->execute($id);
         }
         elsif ($P{$id} =~ m{\A \d+ \z}xms) {
             $upd_sth->execute($P{$id}, $id);
+        }
+        elsif ($P{$id} && $P{$id} ne 'update_sl') {
+            $result .= "$P{$id} is neither d, D, or a digit<br>";
         }
     }
 }
