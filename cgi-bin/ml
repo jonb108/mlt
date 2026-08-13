@@ -1157,6 +1157,13 @@ sub search_plus2 {
     if ($topic_search) {
         push @where, "topics_desc like '%$topic_search%'";
     }
+    my $sort_by = $P{sort_by};
+    if ($sort_by eq 'mdate') {
+        $sort_by = 'mdate desc';
+    }
+    else {
+        $sort_by = 'count desc, mdate desc';
+    }
     if (! @where) {
         $result = 'Nothing to search for!';
         return;
@@ -1167,7 +1174,7 @@ sub search_plus2 {
         SELECT *
           FROM messages
          WHERE $where
-      ORDER BY mdate desc, message asc
+      ORDER BY $sort_by, message asc
 
 EOS
     $plus_sth->execute();
@@ -1230,6 +1237,7 @@ Min Length</td><td><input type=text name=min_len size=5>
 Max Length <input type=text name=max_len size=5>
 </td></tr>
 <tr><td align=right>Topic</td><td><input type=text name=topic_search size=20></td></tr>
+<tr><td align=right>Sort By</td><td>&nbsp;&nbsp;&nbsp;&nbsp;<label>Date <input type=radio name=sort_by value=mdate checked></label>&nbsp;&nbsp;&nbsp;&nbsp;<label>Count <input type=radio name=sort_by value=count></label></td></tr>
 <tr><td></td><td><input type=submit class=sub value='Search'></td></tr>
 </table>
 </form>
