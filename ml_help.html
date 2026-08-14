@@ -138,10 +138,11 @@ You are also asked for an <i>optional</i> Brigade Name, City, and State.
 After the message is added you are asked what Topics apply to it.
 See below for an explanation of Topics.
 <p>
-Duplicate messages are mostly ignored.
-The given date will be updated if it is later than
-the date on the message but the message text, brigade name, city, and state
-will not change.
+Duplicate messages are handled in a special way.
+The date from the added message will be used if it is later than
+the date on the existing message but the message text,
+brigade name, city, and state will not change.
+The count of the message <i>will</i> be incremented.
 <p>
 The Brigade Name, City, and State are remembered
 for when you next add a message.
@@ -259,6 +260,21 @@ your brigade's messages.
 It is recommended that you keep this history in another
 place - such as your own spreadsheet or in the VB Letter Tool described
 below in the <a href=#see_also>See Also</a> section.
+<h2>Almost Duplicate Messages</h2>
+<div class=green2>
+WELCOME TO WARFLATION<br>
+WELCOME TO WAR-FLATION<br>
+WELCOME TO WAR FLATION<br>
+</div>
+<p>
+Groups of messages like these which differ <i>only</i> in punctuation will be periodically
+collapsed into just one message with a cumulative count:
+<div class=green2>
+WELCOME TO WARFLATION&nbsp;&nbsp;<span class=red>3</span>
+</div>
+<p>
+For your own brigade's use you can copy a message and then improve it with
+whatever punctuation you deem best.
 <h2>Date Formats</h2>
 When entering dates for messages you can use several formats:
 <ul>
@@ -319,8 +335,8 @@ manage a brigade's letters:
 </ul>
 After a one-time initialization you can easily check
 whether you have enough letters to make a given message.
-You can also easily keep a historical list of the messsages you had
-on the bridge - and export them for importing here.
+You can also keep a historical list of the messsages you had
+on your bridge - and export them for importing here.
 <h2>Ideas for Future Development</h2>
 <ol>
 <li>What to do about messages or topics that are added by mistake or
